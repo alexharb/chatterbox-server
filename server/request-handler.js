@@ -11,7 +11,11 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
-var results = {results:[]}
+var allChats = {results:[{username: 'test', text: 'test', createdAt: 0, objectId: 0}]}
+var counter = 1;
+var createdAt = 1;
+var body;
+
 var requestHandler = function(request, response) {
   // Request and Response come from node's http module.
   //
@@ -27,11 +31,20 @@ var requestHandler = function(request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
+  console.log(request.method, 'this is the request method')
+  if (request.method === 'OPTIONS') {
+    console.log('options are a-go')
+    var statusCode = 200;
+    var headers = defaultCorsHeaders;
+    response.writeHead(statusCode, headers);
+    response.end('youre good to go!');
+  }
   if(request.method === 'GET'){
-    if (request.url !== '/classes/messages'){
+    if (request.url !== '/classes/messages') {
       var statusCode = 404;
       var headers = defaultCorsHeaders;
       response.writeHead(statusCode, headers);
+      console.log('ERROR', request.url)
       response.end('error message');
     } else {
       console.log('Serving request type ' + request.method + ' for url ' + request.url);
@@ -58,31 +71,33 @@ var requestHandler = function(request, response) {
       //
       // Calling .end "flushes" the response's internal buffer, forcing
       // node to actually send all the data over to the client.
-      
-      response.end(JSON.stringify(results));
+      response.end(JSON.stringify(allChats));
     }
   } 
   
   
    if (request.method === 'POST'){
       console.log('Serving request type ' + request.method + ' for url ' + request.url);
-      var body = '';
+      body = '';
       request.on('data', (data) => {
         body += data.toString();
-      });
-      request.on('end', () => {
+      }).on('end', () => {
+        body = JSON.parse(body);
+        body.objectId = counter;
+        body.createdAt = createdAt;
+        counter++;
+        createdAt++;
         console.log(body, 'end')
-        results.results.push(JSON.parse(body));
-      })
-      console.log("POSTED");
-      var statusCode = 201;
-      var headers = defaultCorsHeaders;
-      headers['Content-Type'] = 'application/json';
-      response.writeHead(statusCode, headers);
-      response.end('post received');
+        allChats.results.push(body);
+        console.log("POSTED", body, 'THAT WAS THE BODY DID YOU SEE IT');
+        var statusCode = 201;
+        var headers = defaultCorsHeaders;
+        headers['Content-Type'] = 'application/json';
+        response.writeHead(statusCode, headers);
+        response.end(JSON.stringify(body));
+      });
+      
   } 
-  
-  
 };
 
 // var properRequestHandler = function() {
@@ -106,4 +121,4 @@ var defaultCorsHeaders = {
 };
 
 exports.requestHandler = requestHandler;
-exports.defaultCorsHeaders = defaultCorsHeaders;
+exports.allChats = allChats;
